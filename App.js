@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { View, Dimensions, StyleSheet } from "react-native";
+import { View, Dimensions, StyleSheet, Alert } from "react-native";
 import * as Location from "expo-location";
+import * as Permissions from "expo-permissions";
 import MapView from "react-native-maps";
 
 export default function Teste() {
@@ -12,22 +13,31 @@ export default function Teste() {
   }, [latitude, longitude]);
 
   async function getLocation() {
-    const location = await Location.watchPositionAsync(
-      {
-        enableHighAccuracy: true,
-        distanceInterval: 1,
-        timeInterval: 10000
-      },
-      newLocation => {
-        let coords = newLocation.coords;
-        console.log("latitude: " + coords.latitude);
-        console.log("longitude: " + coords.longitude);
-        setLatitude(coords.latitude);
-        setLongitude(coords.longitude);
-      },
-      error => console.log(error)
-    );
-    return location;
+    //Location.startLocationUpdatesAsync <- para pegar localização em segundo plano.
+
+    //pedir permissao ao usuario
+    let { status } = await Permissions.askAsync(Permissions.LOCATION);
+    if (status !== "granted") {
+      console.log("Usuario nao permitiu acesso ao gps.\nstatus: " + status);
+      Alert.alert("You is dumb, bro ?\nVocê precisa liberar o gps.");
+    } else {
+      const location = await Location.watchPositionAsync(
+        {
+          enableHighAccuracy: true,
+          distanceInterval: 1, //Receba atualizações somente quando o local for alterado em pelo menos essa distância em metros.
+          timeInterval: 10000 //Tempo mínimo de espera entre cada atualização em milissegundos
+        },
+        newLocation => {
+          let coords = newLocation.coords;
+          console.log("latitude: " + coords.latitude);
+          console.log("longitude: " + coords.longitude);
+          setLatitude(coords.latitude);
+          setLongitude(coords.longitude);
+        },
+        error => console.log(error)
+      );
+      return location;
+    }
   }
 
   return (
